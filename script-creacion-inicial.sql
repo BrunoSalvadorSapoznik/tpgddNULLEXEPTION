@@ -29,7 +29,7 @@ GO
 --drop de tablas
 DECLARE @DropTables NVARCHAR(MAX) = ''
 
-SELECT @DropTables += 'DROP TABLE NULL_EXEPTION. ' + QUOTENAME(TABLE_NAME)
+SELECT @DropTables += 'DROP TABLE [NULL_EXEPTION]. ' + QUOTENAME(TABLE_NAME)
 
 FROM INFORMATION_SCHEMA.TABLES
 
@@ -45,225 +45,292 @@ IF EXISTS(SELECT name FROM sys.schemas WHERE name = 'NULL_EXEPTION')
 DROP SCHEMA NULL_EXEPTION
 GO
 
---Creacion de esquema---------------
+--CREACIÓN DE SCHEMA--------------------------------
 CREATE SCHEMA NULL_EXEPTION;
 GO
 
-CREATE TABLE NULL_EXEPTION.Pedido (
-    id BIGINT PRIMARY KEY,
-    sucursal_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Sucursal(id),
-    cliente_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Cliente(id),
-    fecha_hora DATETIME,
-    precio_total FLOAT
-);
+print '**** SCHEMA creado correctamente ****';
+
 GO
 
-CREATE TABLE NULL_EXEPTION.DetallePedido (
-    id BIGINT PRIMARY KEY,
-    pedido_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Pedido(id),
-    sillon_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Sillon(id),
-    cantidad BIGINT,
-    precio_unitario FLOAT,
-    sub_total FLOAT
-);
-GO
+--CREACIÓN DE TABLAS--------------------------------
 
-CREATE TABLE NULL_EXEPTION.Sucursal (
+CREATE TABLE [NULL_EXEPTION].[Provincia] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    localidad_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Localidad(id),
-    direccion VARCHAR(255),
-    telefono VARCHAR(50),
-    mail VARCHAR(255)
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Localidad (
+
+CREATE TABLE [NULL_EXEPTION].[Localidad] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    provincia_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Provincia(id)
+    nombre VARCHAR(255) NOT NULL,
+    provincia_id BIGINT,
+    FOREIGN KEY (provincia_id) REFERENCES [NULL_EXEPTION].Provincia(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Provincia (
+
+CREATE TABLE [NULL_EXEPTION].[Sucursal] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
+    nombre VARCHAR(255) NOT NULL,
+    localidad_id BIGINT,
+    dirección VARCHAR(255),
+    teléfono VARCHAR(50),
+    mail VARCHAR(255),
+    FOREIGN KEY (localidad_id) REFERENCES [NULL_EXEPTION].Localidad(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Cliente (
+
+CREATE TABLE [NULL_EXEPTION].[Cliente] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    apellido VARCHAR(255),
+    nombre VARCHAR(255) NOT NULL,
+    apellido VARCHAR(255) NOT NULL,
     email VARCHAR(255),
-    telefono VARCHAR(50),
-    localidad_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Localidad(id),
+    teléfono VARCHAR(50),
+    localidad_id BIGINT,
     dni VARCHAR(50),
-    fecha_nacimiento DATE
+    fecha_nacimiento DATE,
+    FOREIGN KEY (localidad_id) REFERENCES [NULL_EXEPTION].Localidad(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.DetalleFactura (
+
+CREATE TABLE [NULL_EXEPTION].[Pedido] 
+(
     id BIGINT PRIMARY KEY,
-    detalle_ped_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.DetallePedido(id),
-    sucursal_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Sucursal(id),
-    cliente_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Cliente(id),
+    sucursal_id BIGINT,
+    cliente_id BIGINT,
+    fecha_hora DATETIME,
+    precio_total DECIMAL,
+    FOREIGN KEY (sucursal_id) REFERENCES [NULL_EXEPTION].Sucursal(id),
+    FOREIGN KEY (cliente_id) REFERENCES [NULL_EXEPTION].Cliente(id)
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Medida] 
+(
+    id BIGINT PRIMARY KEY,
+    lar DECIMAL,
+    profundidad DECIMAL,
+    alto DECIMAL,
+    precio DECIMAL
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Modelo] 
+(
+    id BIGINT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    precio_base DECIMAL,
+    descripción TEXT
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Sillon] 
+(
+    id BIGINT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    modelo_id BIGINT,
+    medida_id BIGINT,
+    FOREIGN KEY (modelo_id) REFERENCES [NULL_EXEPTION].Modelo(id),
+    FOREIGN KEY (medida_id) REFERENCES [NULL_EXEPTION].Medida(id)
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[DetallePedido] 
+(
+    id BIGINT PRIMARY KEY,
+    pedido_id BIGINT,
+    sillon_id BIGINT,
     cantidad BIGINT,
-    precio_unitario FLOAT,
-    subtotal FLOAT
+    precio_unitario DECIMAL,
+    sub_total DECIMAL,
+    FOREIGN KEY (pedido_id) REFERENCES [NULL_EXEPTION].Pedido(id),
+    FOREIGN KEY (sillon_id) REFERENCES [NULL_EXEPTION].Sillon(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Envio (
+
+CREATE TABLE [NULL_EXEPTION].[DetalleFactura] 
+(
     id BIGINT PRIMARY KEY,
-    factura_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Factura(nroFactura),
+    detalle_ped_id BIGINT,
+    sucursal_id BIGINT,
+    cliente_id BIGINT,
+    cantidad BIGINT,
+    precio_unitario DECIMAL,
+    subtotal DECIMAL,
+    FOREIGN KEY (detalle_ped_id) REFERENCES [NULL_EXEPTION].DetallePedido(id),
+    FOREIGN KEY (sucursal_id) REFERENCES [NULL_EXEPTION].Sucursal(id),
+    FOREIGN KEY (cliente_id) REFERENCES [NULL_EXEPTION].Cliente(id)
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Factura] 
+(
+    nroFactura BIGINT PRIMARY KEY,
+    sucursal_id BIGINT,
+    cliente_id BIGINT,
+    fecha_hora DATETIME,
+    precio_total DECIMAL,
+    pedido_id BIGINT,
+    FOREIGN KEY (sucursal_id) REFERENCES [NULL_EXEPTION].Sucursal(id),
+    FOREIGN KEY (cliente_id) REFERENCES [NULL_EXEPTION].Cliente(id),
+    FOREIGN KEY (pedido_id) REFERENCES [NULL_EXEPTION].Pedido(id)
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Envio] 
+(
+    id BIGINT PRIMARY KEY,
+    factura_id BIGINT,
     fecha_programada DATETIME,
     fecha_entrega DATETIME,
-    importe_traslado FLOAT,
-    importe_subida FLOAT,
-    total FLOAT
+    importe_traslado DECIMAL,
+    importe_subida DECIMAL,
+    total DECIMAL,
+    FOREIGN KEY (factura_id) REFERENCES [NULL_EXEPTION].Factura(nroFactura)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Factura (
-    nroFactura BIGINT PRIMARY KEY,
-    sucursal_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Sucursal(id),
-    cliente_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Cliente(id),
+
+CREATE TABLE [NULL_EXEPTION].[Estado] 
+(
+    id BIGINT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[Estado_X_Pedido] 
+(
+    id_estado BIGINT PRIMARY KEY,
+    id_pedido BIGINT PRIMARY KEY,
     fecha_hora DATETIME,
-    precio_total FLOAT,
-    pedido_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Pedido(id)
+    motivo TEXT,
+    FOREIGN KEY (id_estado) REFERENCES [NULL_EXEPTION].Estado(id),
+    FOREIGN KEY (id_pedido) REFERENCES [NULL_EXEPTION].Pedido(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Estado (
+
+CREATE TABLE [NULL_EXEPTION].[Textura] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Estado_X_Pedido (
-    id_estado BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Estado(id),
-    id_pedido BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Pedido(id),
-    fecha_hora DATETIME,
-    motivo TEXT
-);
-GO
 
-CREATE TABLE NULL_EXEPTION.Medida (
+CREATE TABLE [NULL_EXEPTION].[Color] 
+(
     id BIGINT PRIMARY KEY,
-    largo FLOAT,
-    profundidad FLOAT,
-    alto FLOAT,
-    precio FLOAT
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Sillon (
+
+CREATE TABLE [NULL_EXEPTION].[Dureza] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    modelo_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Modelo(id),
-    medida_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Medida(id)
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Modelo (
+
+CREATE TABLE [NULL_EXEPTION].[Densidad] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    precio_base FLOAT,
-    descripcion TEXT
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Material (
+
+CREATE TABLE [NULL_EXEPTION].[Material] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    precio_base FLOAT,
-    tipo_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Tipo(id),
-    descripcion TEXT
+    nombre VARCHAR(255) NOT NULL,
+    precio_base DECIMAL,
+    tipo_id BIGINT,
+    descripción TEXT,
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Tela (
+
+CREATE TABLE [NULL_EXEPTION].[Tela] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    color_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Color(id),
-    textura_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Textura(id),
-    disponible BOOLEAN
+    nombre VARCHAR(255) NOT NULL,
+    color_id BIGINT,
+    textura_id BIGINT,
+    disponible BOOLEAN,
+    FOREIGN KEY (color_id) REFERENCES [NULL_EXEPTION].Color(id),
+    FOREIGN KEY (textura_id) REFERENCES [NULL_EXEPTION].Textura(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Madera (
+
+CREATE TABLE [NULL_EXEPTION].[Madera] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    color_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Color(id),
-    dureza_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Dureza(id),
-    disponible BOOLEAN
+    nombre VARCHAR(255) NOT NULL,
+    color_id BIGINT,
+    dureza_id BIGINT,
+    disponible BOOLEAN,
+    FOREIGN KEY (color_id) REFERENCES [NULL_EXEPTION].Color(id),
+    FOREIGN KEY (dureza_id) REFERENCES [NULL_EXEPTION].Dureza(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Relleno (
+
+CREATE TABLE [NULL_EXEPTION].[Relleno] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255),
-    densidad_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Densidad(id),
-    disponible BOOLEAN
+    nombre VARCHAR(255) NOT NULL,
+    densidad_id BIGINT,
+    disponible BOOLEAN,
+    FOREIGN KEY (densidad_id) REFERENCES [NULL_EXEPTION].Densidad(id)
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Textura (
+CREATE TABLE [NULL_EXEPTION].[RazonSocial] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
+    nombre VARCHAR(255) NOT NULL
 );
-GO
 
-CREATE TABLE NULL_EXEPTION.Color (
+CREATE TABLE [NULL_EXEPTION].[Proveedor] 
+(
     id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
-);
-GO
-
-CREATE TABLE NULL_EXEPTION.Dureza (
-    id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
-);
-GO
-
-CREATE TABLE NULL_EXEPTION.Densidad (
-    id BIGINT PRIMARY KEY,
-    nombre VARCHAR(255)
-);
-GO
-
-CREATE TABLE NULL_EXEPTION.DetalleCompra (
-    id BIGINT PRIMARY KEY,
-    id_compra BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Compra(id),
-    id_material BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Material(id),
-    precio_unitario FLOAT,
-    cantidad FLOAT,
-    subtotal FLOAT
-);
-GO
-
-CREATE TABLE NULL_EXEPTION.Compra (
-    id BIGINT PRIMARY KEY,
-    id_sucursal BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Sucursal(id),
-    id_proveedor BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Proveedor(id),
-    fecha DATETIME,
-    total FLOAT
-);
-GO
-
-CREATE TABLE NULL_EXEPTION.Proveedor (
-    id BIGINT PRIMARY KEY,
-    localidad_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.Localidad(id),
-    razon_social_id BIGINT FOREIGN KEY REFERENCES NULL_EXEPTION.RazonSocial(id),
+    localidad_id BIGINT,
+    razon_social_id BIGINT,
     cuit VARCHAR(50),
-    direccion VARCHAR(255),
-    telefono VARCHAR(50),
-    mail VARCHAR(255)
+    dirección VARCHAR(255),
+    teléfono VARCHAR(50),
+    mail VARCHAR(255),
+    FOREIGN KEY (localidad_id) REFERENCES [NULL_EXEPTION].Localidad(id),
+    FOREIGN KEY (razon_social_id) REFERENCES [NULL_EXEPTION].RazonSocial(id)
 );
+
+
+CREATE TABLE [NULL_EXEPTION].[Compra] 
+(
+    id BIGINT PRIMARY KEY,
+    id_sucursal BIGINT,
+    id_proveedor BIGINT,
+    fecha DATETIME,
+    total DECIMAL,
+    FOREIGN KEY (id_sucursal) REFERENCES [NULL_EXEPTION].Sucursal(id),
+    FOREIGN KEY (id_proveedor) REFERENCES [NULL_EXEPTION].Proveedor(id)
+);
+
+
+CREATE TABLE [NULL_EXEPTION].[DetalleCompra] 
+(
+    id BIGINT PRIMARY KEY,
+    id_compra BIGINT,
+    id_material BIGINT,
+    precio_unitario DECIMAL,
+    cantidad DECIMAL,
+    subtotal DECIMAL,
+    FOREIGN KEY (id_compra) REFERENCES [NULL_EXEPTION].Compra(id),
+    FOREIGN KEY (id_material) REFERENCES [NULL_EXEPTION].Material(id)
+);
+
+
+print '**** Tablas creadas correctamente ****';
+
 GO
-
-
 
 
 
