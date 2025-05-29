@@ -67,8 +67,7 @@ CREATE TABLE [NULL_EXEPTION].[Localidad]
 (
     [id] BIGINT NOT NULL IDENTITY,
     [nombre] NVARCHAR(255) NOT NULL,
-    [provincia_id] BIGINT,
-    FOREIGN KEY (provincia_id) REFERENCES [NULL_EXEPTION].Provincia(id)
+    [provincia_id] BIGINT
 );
 
 /* SUCURSAL */
@@ -79,8 +78,7 @@ CREATE TABLE [NULL_EXEPTION].[Sucursal]
     [localidad_id] BIGINT,
     [dirección] NVARCHAR(255),
     [teléfono] NVARCHAR(50),
-    [mail] NVARCHAR(255),
-    FOREIGN KEY (localidad_id) REFERENCES [NULL_EXEPTION].Localidad(id)
+    [mail] NVARCHAR(255)
 );
 
 /* CLIENTE */
@@ -93,8 +91,7 @@ CREATE TABLE [NULL_EXEPTION].[Cliente]
     [teléfono] NVARCHAR(50),
     [localidad_id] BIGINT,
     [dni] NVARCHAR(50),
-    [fecha_nacimiento] DATE,
-    FOREIGN KEY (localidad_id) REFERENCES [NULL_EXEPTION].Localidad(id)
+    [fecha_nacimiento] DATE
 );
 
 /* PEDIDO */
@@ -104,9 +101,7 @@ CREATE TABLE [NULL_EXEPTION].[Pedido]
     [sucursal_id] BIGINT,
     [cliente_id] BIGINT,
     [fecha_hora] DATETIME,
-    [precio_total] DECIMAL,
-    FOREIGN KEY (sucursal_id) REFERENCES [NULL_EXEPTION].Sucursal(id),
-    FOREIGN KEY (cliente_id) REFERENCES [NULL_EXEPTION].Cliente(id)
+    [precio_total] DECIMAL
 );
 
 /* MEDIDA */
@@ -134,9 +129,7 @@ CREATE TABLE [NULL_EXEPTION].[Sillon]
     [id] BIGINT NOT NULL IDENTITY,
     [nombre] NVARCHAR(255) NOT NULL,
     [modelo_id] BIGINT,
-    [medida_id] BIGINT,
-    FOREIGN KEY (modelo_id) REFERENCES [NULL_EXEPTION].Modelo(id),
-    FOREIGN KEY (medida_id) REFERENCES [NULL_EXEPTION].Medida(id)
+    [medida_id] BIGINT
 );
 
 /* DETALLE_PEDIDO */
@@ -268,19 +261,12 @@ CREATE TABLE [NULL_EXEPTION].[Relleno]
     [disponible] BOOLEAN
 );
 
-/* RAZON_SOCIAL */
-CREATE TABLE [NULL_EXEPTION].[RazonSocial] 
-(
-    [id] BIGINT NOT NULL IDENTITY,
-    [nombre] NVARCHAR(255) NOT NULL
-);
-
 /* PROVEEDOR */
 CREATE TABLE [NULL_EXEPTION].[Proveedor] 
 (
     [id] BIGINT NOT NULL IDENTITY,
     [localidad_id] BIGINT,
-    [razon_social_id] BIGINT,
+    [razon_social_id] NVARCHAR(255),
     [cuit] NVARCHAR(50),
     [dirección] NVARCHAR(255),
     [teléfono] NVARCHAR(50),
@@ -311,7 +297,6 @@ CREATE TABLE [NULL_EXEPTION].[DetalleCompra]
 
 /* CONSTRAINT GENERATION - PRIMARY KEYS */
 
-/* EJEMPLO DE PK */
 ALTER TABLE [NULL_EXEPTION].[Provincia]
     ADD CONSTRAINT [PK_Provincia] PRIMARY KEY CLUSTERED ([id] ASC);
 
@@ -377,9 +362,6 @@ ALTER TABLE [NULL_EXEPTION].[Madera]
 
 ALTER TABLE [NULL_EXEPTION].[Relleno]
     ADD CONSTRAINT [PK_Relleno] PRIMARY KEY CLUSTERED ([id] ASC);
-
-ALTER TABLE [NULL_EXEPTION].[RazonSocial]
-    ADD CONSTRAINT [PK_RazonSocial] PRIMARY KEY CLUSTERED ([id] ASC);
 
 ALTER TABLE [NULL_EXEPTION].[Proveedor]
     ADD CONSTRAINT [PK_Proveedor] PRIMARY KEY CLUSTERED ([id] ASC);
@@ -489,10 +471,6 @@ ALTER TABLE [NULL_EXEPTION].[Proveedor]
     ADD CONSTRAINT [FK_Proveedor_localidad] FOREIGN KEY ([localidad_id])
     REFERENCES [NULL_EXEPTION].[Localidad]([id]);
 
-ALTER TABLE [NULL_EXEPTION].[Proveedor]
-    ADD CONSTRAINT [FK_Proveedor_razon_social] FOREIGN KEY ([razon_social_id])
-    REFERENCES [NULL_EXEPTION].[RazonSocial]([id]);
-
 ALTER TABLE [NULL_EXEPTION].[Compra]
     ADD CONSTRAINT [FK_Compra_sucursal] FOREIGN KEY ([id_sucursal])
     REFERENCES [NULL_EXEPTION].[Sucursal]([id]);
@@ -515,3 +493,37 @@ GO
 
 /* --- MIGRACION DE DATOS ---*/
 
+/* PROVINCIA */ 
+
+CREATE PROCEDURE [NULL_EXEPTION].Migrar_Provincia
+AS
+BEGIN
+    INSERT INTO [NULL_EXEPTION].[Provincia] (nombre)
+    SELECT DISTINCT Sucursal_Provincia as nombre
+    FROM gd_esquema.Maestra
+    WHERE Sucursal_Provincia NOT IN (SELECT nombre FROM [NULL_EXEPTION].[Provincia]);
+
+    INSERT INTO [NULL_EXEPTION].[Provincia] (nombre)
+    SELECT DISTINCT Cliente_Provincia as nombre
+    FROM gd_esquema.Maestra
+    WHERE Cliente_Provincia NOT IN (SELECT nombre FROM [NULL_EXEPTION].[Provincia]);
+
+    INSERT INTO [NULL_EXEPTION].[Provincia] (nombre)
+    SELECT DISTINCT Proveedor_Provincia as nombre
+    FROM gd_esquema.Maestra
+    WHERE Proveedor_Provincia NOT IN (SELECT nombre FROM [NULL_EXEPTION].[Provincia]);
+END
+GO
+
+/* LOCALIDAD */
+/*
+CREATE PROCEDURE [NULL_EXEPTION].Migrar_Localidad
+AS
+BEGIN
+    INSERT INTO [NULL_EXEPTION].[Localidad] (nombre, provincia_id)
+    SELECT DISTINCT Sucursal_Localidad , Provincia.id
+    FROM gd_esquema.Maestra 
+    JOIN [NULL_EXEPTION].[Provincia] P ON P.nombre = Sucursal_Provincia
+    WHERE NOT EXISTS(
+
+    )*/
