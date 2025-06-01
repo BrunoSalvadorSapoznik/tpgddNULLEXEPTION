@@ -9,13 +9,13 @@ GO
 --drop de FKs
 DECLARE @DropConstraints NVARCHAR(MAX) = N''
 
-SELECT @DropConstraints += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' -- Corregido: punto para separar schema y tabla
-                         + QUOTENAME(OBJECT_NAME(parent_object_id)) + ' ' + 'DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13) -- Corregido: punto, espacio y ;
+SELECT @DropConstraints += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' 
+                         + QUOTENAME(OBJECT_NAME(parent_object_id)) + ' ' + 'DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13) 
 FROM sys.foreign_keys
 
--- PRINT @DropConstraints -- Descomentar para depurar y ver las sentencias generadas
+
 IF @DropConstraints <> N''
-    EXECUTE sp_executesql @DropConstraints; -- Corregido: Nombre de variable
+    EXECUTE sp_executesql @DropConstraints; 
 
 PRINT '**** dropeo de constraints hecho con exito ****';
 GO
@@ -23,11 +23,11 @@ GO
 --drop de tablas
 DECLARE @DropTables NVARCHAR(MAX) = N''
 
-SELECT @DropTables += 'DROP TABLE ' + QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + ';' + CHAR(13) -- Corregido: sintaxis y ;
+SELECT @DropTables += 'DROP TABLE ' + QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + ';' + CHAR(13) 
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'NULL_EXEPTION' and TABLE_TYPE = 'BASE TABLE'
 
--- PRINT @DropTables -- Descomentar para depurar y ver las sentencias generadas
+
 IF @DropTables <> N''
     EXECUTE sp_executesql @DropTables
 
@@ -170,11 +170,11 @@ CREATE TABLE [NULL_EXEPTION].[Cliente]
 /* PEDIDO */
 CREATE TABLE [NULL_EXEPTION].[Pedido]
 (
-    [id] BIGINT NOT NULL, /* MODIFICADO: Quitado IDENTITY */
+    [id] BIGINT NOT NULL, 
     [sucursal_id] BIGINT,
     [cliente_id] BIGINT,
     [fecha_hora] DATETIME,
-    [precio_total] DECIMAL(18,2) /* Especificar precision y escala para DECIMAL es buena practica */
+    [precio_total] DECIMAL(18,2) 
 );
 
 /* MEDIDA */
@@ -193,7 +193,7 @@ CREATE TABLE [NULL_EXEPTION].[Modelo]
     [id] BIGINT NOT NULL IDENTITY,
     [nombre] NVARCHAR(255) NOT NULL,
     [precio_base] DECIMAL(18,2),
-    [descripcion] NVARCHAR(MAX) /* Usar NVARCHAR(MAX) para descripciones largas */
+    [descripcion] NVARCHAR(MAX) 
 );
 
 /* SILLON */
@@ -230,7 +230,7 @@ CREATE TABLE [NULL_EXEPTION].[DetalleFactura]
 /* FACTURA */
 CREATE TABLE [NULL_EXEPTION].[Factura]
 (
-    [id] BIGINT NOT NULL, /* MODIFICADO: Quitado IDENTITY */
+    [id] BIGINT NOT NULL, 
     [sucursal_id] BIGINT,
     [cliente_id] BIGINT,
     [fecha_hora] DATETIME,
@@ -241,7 +241,7 @@ CREATE TABLE [NULL_EXEPTION].[Factura]
 /* ENVIO */
 CREATE TABLE [NULL_EXEPTION].[Envio]
 (
-    [id] BIGINT NOT NULL, /* MODIFICADO: Quitado IDENTITY */
+    [id] BIGINT NOT NULL, 
     [factura_id] BIGINT,
     [fecha_programada] DATETIME,
     [fecha_entrega] DATETIME,
@@ -263,7 +263,7 @@ CREATE TABLE [NULL_EXEPTION].[Estado_X_Pedido]
     [estado_id] BIGINT NOT NULL,
     [pedido_id] BIGINT NOT NULL,
     [fecha_hora] DATETIME NOT NULL,
-    [motivo] NVARCHAR(MAX) /* Usar NVARCHAR(MAX) para motivos */
+    [motivo] NVARCHAR(MAX) 
 );
 
 /* TEXTURA */
@@ -313,7 +313,7 @@ CREATE TABLE [NULL_EXEPTION].[Tela]
     [nombre] NVARCHAR(255) NOT NULL,
     [color_id] BIGINT,
     [textura_id] BIGINT,
-    [disponible] BIT -- Usar BIT para booleano en SQL Server
+    [disponible] BIT 
 );
 
 /* MADERA */
@@ -340,7 +340,7 @@ CREATE TABLE [NULL_EXEPTION].[Proveedor]
 (
     [id] BIGINT NOT NULL IDENTITY,
     [localidad_id] BIGINT,
-    [razon_social_id] NVARCHAR(255), -- razon_social_id o razon_social? Si es el nombre, es NVARCHAR. Si es un ID a otra tabla, BIGINT. Asumo que es el nombre.
+    [razon_social_id] NVARCHAR(255), 
     [cuit] NVARCHAR(50),
     [direccion] NVARCHAR(255),
     [telefono] NVARCHAR(50),
@@ -350,7 +350,7 @@ CREATE TABLE [NULL_EXEPTION].[Proveedor]
 /* COMPRA */
 CREATE TABLE [NULL_EXEPTION].[Compra]
 (
-    [id] BIGINT NOT NULL, /* MODIFICADO: Quitado IDENTITY */
+    [id] BIGINT NOT NULL, 
     [sucursal_id] BIGINT,
     [proveedor_id] BIGINT,
     [fecha] DATETIME,
@@ -364,7 +364,7 @@ CREATE TABLE [NULL_EXEPTION].[DetalleCompra]
     [compra_id] BIGINT,
     [material_id] BIGINT,
     [precio_unitario] DECIMAL(18,2),
-    [cantidad] DECIMAL(18,3), -- Cantidad puede ser decimal (ej: 2.5 metros de tela)
+    [cantidad] DECIMAL(18,3), 
     [subtotal] DECIMAL(18,2)
 );
 
@@ -375,7 +375,6 @@ CREATE TABLE [NULL_EXEPTION].[Sillon_X_Material]
     [sillon_id] BIGINT,
     [material_id] BIGINT
 );
-
 
 
 /* CONSTRAINT GENERATION - PRIMARY KEYS */
@@ -592,6 +591,54 @@ ALTER TABLE [NULL_EXEPTION].[Sillon_X_Material]
 PRINT '**** Tablas y Constraints creadas correctamente ****';
 GO
 
+/* --- TRIGGERS ---*/
+
+CREATE TRIGGER trg_ValidarFechasEnvio
+ON GrupoX.Envio
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM inserted WHERE fecha_entrega < fecha_programada
+    )
+    BEGIN
+        RAISERROR('La fecha de entrega no puede ser anterior a la fecha programada.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
+
+CREATE TRIGGER trg_ActualizarEstadoPedido
+ON GrupoX.Factura
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO GrupoX.Estado_X_Pedido (id_estado, id_pedido, fecha_hora, motivo)
+    SELECT 2, pedido_id, GETDATE(), 'Pedido facturado'
+    FROM inserted;
+END;
+GO
+
+CREATE TRIGGER trg_PreventDeleteCliente
+ON GrupoX.Cliente
+INSTEAD OF DELETE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM GrupoX.Pedido p
+        JOIN deleted d ON p.cliente_id = d.id
+    )
+    BEGIN
+        RAISERROR('No se puede eliminar un cliente con pedidos asociados.', 16, 1);
+        RETURN;
+    END
+    ELSE
+    BEGIN
+        DELETE FROM GrupoX.Cliente WHERE id IN (SELECT id FROM deleted);
+    END
+END;
+GO
+
 /* --- MIGRACION DE DATOS ---*/
 
 /* PROVINCIA */
@@ -663,7 +710,7 @@ AS
 BEGIN
     INSERT INTO [NULL_EXEPTION].[Sucursal] (nombre, localidad_id, direccion, telefono, mail)
     SELECT DISTINCT
-        CAST(m.Sucursal_NroSucursal AS NVARCHAR(255)), -- Nombre es NroSucursal
+        CAST(m.Sucursal_NroSucursal AS NVARCHAR(255)), 
         l.id,
         m.Sucursal_Direccion,
         m.Sucursal_Telefono,
@@ -694,7 +741,7 @@ BEGIN
     FROM gd_esquema.Maestra m
     JOIN [NULL_EXEPTION].[Provincia] p ON p.nombre = m.Cliente_Provincia
     JOIN [NULL_EXEPTION].[Localidad] l ON l.nombre = m.Cliente_Localidad AND l.provincia_id = p.id
-    WHERE m.Cliente_Dni IS NOT NULL -- Un cliente debe tener DNI para ser unico
+    WHERE m.Cliente_Dni IS NOT NULL 
       AND NOT EXISTS (
         SELECT 1 FROM [NULL_EXEPTION].[Cliente] c WHERE c.dni = m.Cliente_Dni
     );
@@ -724,18 +771,18 @@ BEGIN
     INSERT INTO [NULL_EXEPTION].[Medida] (alto, largo, profundidad, precio)
     SELECT DISTINCT
         TRY_CAST(m.Sillon_Medida_Alto AS DECIMAL(18,2)),
-        TRY_CAST(m.Sillon_Medida_Ancho AS DECIMAL(18,2)), -- Asumo Ancho es Largo
+        TRY_CAST(m.Sillon_Medida_Ancho AS DECIMAL(18,2)), 
         TRY_CAST(m.Sillon_Medida_Profundidad AS DECIMAL(18,2)),
         TRY_CAST(m.Sillon_Medida_Precio AS DECIMAL(18,2))
     FROM gd_esquema.Maestra m
-    WHERE TRY_CAST(m.Sillon_Medida_Alto AS DECIMAL(18,2)) IS NOT NULL -- Al menos una medida debe existir
+    WHERE TRY_CAST(m.Sillon_Medida_Alto AS DECIMAL(18,2)) IS NOT NULL 
       AND NOT EXISTS (
         SELECT 1 FROM [NULL_EXEPTION].[Medida] me
         WHERE
             me.alto = TRY_CAST(m.Sillon_Medida_Alto AS DECIMAL(18,2)) AND
             me.largo = TRY_CAST(m.Sillon_Medida_Ancho AS DECIMAL(18,2)) AND
             me.profundidad = TRY_CAST(m.Sillon_Medida_Profundidad AS DECIMAL(18,2))
-            -- Podria ser necesario incluir el precio en la unicidad si medidas iguales pueden tener precios distintos
+          
     );
 END
 GO
@@ -755,7 +802,6 @@ BEGIN
         ON me.alto = TRY_CAST(m.Sillon_Medida_Alto AS DECIMAL(18,2))
         AND me.largo = TRY_CAST(m.Sillon_Medida_Ancho AS DECIMAL(18,2))
         AND me.profundidad = TRY_CAST(m.Sillon_Medida_Profundidad AS DECIMAL(18,2))
-        -- Asumo que el precio de la medida no es parte de la clave para unir con Sillon_Medida_Precio
     WHERE m.Sillon_Codigo IS NOT NULL AND m.Sillon_Codigo <> ''
       AND NOT EXISTS (
         SELECT 1 FROM [NULL_EXEPTION].[Sillon] s
@@ -863,7 +909,7 @@ BEGIN
     FROM gd_esquema.Maestra m
     JOIN [NULL_EXEPTION].[Sucursal] s ON s.nombre = CAST(m.Sucursal_NroSucursal AS NVARCHAR(255))
     JOIN [NULL_EXEPTION].[Cliente] c ON c.dni = m.Cliente_Dni
-    JOIN [NULL_EXEPTION].[Pedido] p ON p.id = TRY_CAST(m.Pedido_Numero AS BIGINT) -- Asegurar que el pedido existe
+    JOIN [NULL_EXEPTION].[Pedido] p ON p.id = TRY_CAST(m.Pedido_Numero AS BIGINT)
     WHERE m.Factura_Numero IS NOT NULL
       AND NOT EXISTS (
         SELECT 1 FROM [NULL_EXEPTION].[Factura] f
@@ -1195,7 +1241,7 @@ CREATE PROCEDURE [NULL_EXEPTION].Migrar_DetalleCompra
 AS
 BEGIN
     INSERT INTO [NULL_EXEPTION].[DetalleCompra] (compra_id, material_id, precio_unitario, cantidad, subtotal)
-    SELECT DISTINCT -- Si la Maestra puede tener duplicados exactos de lineas de compra
+    SELECT DISTINCT
         TRY_CAST(m.Compra_Numero AS BIGINT),
         mat.id,
         TRY_CAST(m.Detalle_Compra_Precio AS DECIMAL(18,2)),
@@ -1204,13 +1250,12 @@ BEGIN
     FROM gd_esquema.Maestra m
     JOIN [NULL_EXEPTION].[Compra] com ON com.id = TRY_CAST(m.Compra_Numero AS BIGINT) 
     JOIN [NULL_EXEPTION].[Material] mat ON mat.nombre = m.Material_Nombre 
-    -- Es importante que el Material_Nombre + tipo_id (implicito en como se poblo Material) sea unico
     WHERE m.Compra_Numero IS NOT NULL AND m.Material_Nombre IS NOT NULL
       AND NOT EXISTS (
         SELECT 1 FROM [NULL_EXEPTION].[DetalleCompra] dc
         WHERE dc.compra_id = TRY_CAST(m.Compra_Numero AS BIGINT)
           AND dc.material_id = mat.id
-          AND dc.cantidad = TRY_CAST(m.Detalle_Compra_Cantidad AS DECIMAL(18,3)) -- Para distinguir lineas si el mismo material se compra dos veces en la misma orden con misma cantidad
+          AND dc.cantidad = TRY_CAST(m.Detalle_Compra_Cantidad AS DECIMAL(18,3))
           AND dc.precio_unitario = TRY_CAST(m.Detalle_Compra_Precio AS DECIMAL(18,2))
     );
 END
@@ -1262,9 +1307,9 @@ EXEC [NULL_EXEPTION].Migrar_Madera;
 print'-- RELLENOS --';
 EXEC [NULL_EXEPTION].Migrar_Relleno;
 print'-- MATERIALES --';
-EXEC [NULL_EXEPTION].Migrar_Material; -- (Este depende de Tela, Madera, Relleno)
+EXEC [NULL_EXEPTION].Migrar_Material; 
 print'-- SILLON_X_MATERIAL --';
-EXEC [NULL_EXEPTION].Migrar_Sillon_X_Material; -- (Este depende de Material)
+EXEC [NULL_EXEPTION].Migrar_Sillon_X_Material; 
 print'-- PROVEEDORES --';
 EXEC [NULL_EXEPTION].Migrar_Proveedor;
 print'-- COMPRAS --';
