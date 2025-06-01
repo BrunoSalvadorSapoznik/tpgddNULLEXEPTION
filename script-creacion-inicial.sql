@@ -591,54 +591,6 @@ ALTER TABLE [NULL_EXEPTION].[Sillon_X_Material]
 PRINT '**** Tablas y Constraints creadas correctamente ****';
 GO
 
-/* --- TRIGGERS ---*/
-
-CREATE TRIGGER trg_ValidarFechasEnvio
-ON GrupoX.Envio
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM inserted WHERE fecha_entrega < fecha_programada
-    )
-    BEGIN
-        RAISERROR('La fecha de entrega no puede ser anterior a la fecha programada.', 16, 1);
-        ROLLBACK TRANSACTION;
-    END
-END;
-GO
-
-CREATE TRIGGER trg_ActualizarEstadoPedido
-ON GrupoX.Factura
-AFTER INSERT
-AS
-BEGIN
-    INSERT INTO GrupoX.Estado_X_Pedido (id_estado, id_pedido, fecha_hora, motivo)
-    SELECT 2, pedido_id, GETDATE(), 'Pedido facturado'
-    FROM inserted;
-END;
-GO
-
-CREATE TRIGGER trg_PreventDeleteCliente
-ON GrupoX.Cliente
-INSTEAD OF DELETE
-AS
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM GrupoX.Pedido p
-        JOIN deleted d ON p.cliente_id = d.id
-    )
-    BEGIN
-        RAISERROR('No se puede eliminar un cliente con pedidos asociados.', 16, 1);
-        RETURN;
-    END
-    ELSE
-    BEGIN
-        DELETE FROM GrupoX.Cliente WHERE id IN (SELECT id FROM deleted);
-    END
-END;
-GO
-
 /* --- MIGRACION DE DATOS ---*/
 
 /* PROVINCIA */
