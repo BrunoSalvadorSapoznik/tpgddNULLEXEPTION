@@ -380,7 +380,7 @@ FROM [NULL_EXEPTION].[Pedido] p
          JOIN [NULL_EXEPTION].[Modelo] m ON si.modelo_id = m.id
 
          LEFT JOIN [NULL_EXEPTION].[BI_Dim_Tiempo] t
-              ON t.anio = YEAR(p.fecha_hora) AND t.mes = MONTH(p.fecha_hora)
+                   ON t.anio = YEAR(p.fecha_hora) AND t.mes = MONTH(p.fecha_hora)
 
          JOIN [NULL_EXEPTION].[BI_Dim_Ubicacion] u
               ON u.direccion = s.direccion AND u.localidad = l.nombre AND u.provincia = pr.nombre
