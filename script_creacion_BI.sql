@@ -109,9 +109,6 @@ GO
 
 -- Creación de tablas dimensionales
 
-
--- VER QUE COSAS SON REALMENTE NOT NULL Y QUE COSAS SON NULL
-
 CREATE TABLE [NULL_EXEPTION].[BI_Dim_Tiempo]
 (
     [id]           BIGINT NOT NULL IDENTITY,
@@ -131,7 +128,7 @@ CREATE TABLE [NULL_EXEPTION].[BI_Dim_Ubicacion]
 CREATE TABLE [NULL_EXEPTION].[BI_Dim_Cliente]
 (
     [id]           BIGINT       NOT NULL IDENTITY,
-    [rango_etario] NVARCHAR(50) NOT NULL -- REVISAR COMO SE PUEDE HACER PARA QUE SEA UN RANGO
+    [rango_etario] NVARCHAR(50) NOT NULL
 );
 
 CREATE TABLE [NULL_EXEPTION].[BI_Dim_Turno]
@@ -160,32 +157,6 @@ CREATE TABLE [NULL_EXEPTION].[BI_Dim_Tipo_Material]
     [id]            BIGINT       NOT NULL IDENTITY,
     [tipo_material] NVARCHAR(50) NOT NULL
 );
-
-
-------------------HASTA ACA SCRIPT ANTERIOR REVISAR
-
--- Creación de tabla de hechos
-/*
-CREATE TABLE [NULL_EXEPTION].[BI_Fact_Ventas] (
-    [id] BIGINT NOT NULL IDENTITY,
-    [tiempo_id] BIGINT NOT NULL,
-    [ubicacion_id] BIGINT NOT NULL,
-    [cliente_id] BIGINT NOT NULL,
-    [turno_id] BIGINT NOT NULL,
-    [modelo_id] BIGINT NOT NULL,
-    [estado_id] BIGINT NOT NULL,
-    [tipo_material_id] BIGINT,
-    [cantidad_pedidos] BIGINT,
-    [cantidad_facturas] BIGINT,
-    [total_ingresos] DECIMAL(18,2),
-    [total_egresos] DECIMAL(18,2),
-    [ganancias] DECIMAL(18,2),
-    [factura_promedio] DECIMAL(18,2),
-    [tiempo_fabricacion_promedio] DECIMAL(18,2),
-    [porcentaje_conversion] DECIMAL(5,2),
-    [porcentaje_envios_cumplidos] DECIMAL(5,2),
-    [costo_envio_promedio] DECIMAL(18,2),
-);*/
 
 CREATE TABLE [NULL_EXEPTION].[BI_Fact_Ventas]
 (
@@ -404,12 +375,10 @@ FROM [NULL_EXEPTION].[Pedido] p
          JOIN [NULL_EXEPTION].[Localidad] l ON s.localidad_id = l.id
          JOIN [NULL_EXEPTION].[Provincia] pr ON l.provincia_id = pr.id
 
--- JOIN directo a DetallePedido y Sillon
          JOIN [NULL_EXEPTION].[DetallePedido] dp ON dp.pedido_id = p.id
          JOIN [NULL_EXEPTION].[Sillon] si ON dp.sillon_id = si.id
          JOIN [NULL_EXEPTION].[Modelo] m ON si.modelo_id = m.id
 
--- Dimensiones
          LEFT JOIN [NULL_EXEPTION].[BI_Dim_Tiempo] t
               ON t.anio = YEAR(p.fecha_hora) AND t.mes = MONTH(p.fecha_hora)
 
@@ -453,23 +422,19 @@ FROM [NULL_EXEPTION].[Compra] c
          JOIN [NULL_EXEPTION].[DetalleCompra] dc ON c.id = dc.compra_id
          JOIN [NULL_EXEPTION].[Material] m ON dc.material_id = m.id
 
--- JOIN con tipo de material correspondiente
          LEFT JOIN [NULL_EXEPTION].[Tela] te ON m.tela_id = te.id
          LEFT JOIN [NULL_EXEPTION].[Madera] ma ON m.madera_id = ma.id
          LEFT JOIN [NULL_EXEPTION].[Relleno] re ON m.relleno_id = re.id
 
--- JOIN ubicación
          JOIN [NULL_EXEPTION].[Sucursal] s ON c.sucursal_id = s.id
          JOIN [NULL_EXEPTION].[Localidad] l ON s.localidad_id = l.id
          JOIN [NULL_EXEPTION].[Provincia] p ON l.provincia_id = p.id
          JOIN [NULL_EXEPTION].[BI_Dim_Ubicacion] u
               ON u.direccion = s.direccion AND u.localidad = l.nombre AND u.provincia = p.nombre
 
--- JOIN tiempo
          JOIN [NULL_EXEPTION].[BI_Dim_Tiempo] t
               ON t.anio = YEAR(c.fecha) AND t.mes = MONTH(c.fecha)
 
--- JOIN tipo de material (lógico)
          JOIN [NULL_EXEPTION].[BI_Dim_Tipo_Material] tm ON tm.tipo_material =
                                                            CASE
                                                                WHEN m.tela_id IS NOT NULL THEN 'Tela'
@@ -492,14 +457,10 @@ INSERT INTO [NULL_EXEPTION].[BI_Fact_Envios] (
 SELECT
     t.id AS tiempo_id,
     u.id AS ubicacion_id,
-
-    -- Porcentaje de envíos cumplidos en tiempo (fecha_entrega <= fecha_programada)
     CAST(SUM(CASE
                  WHEN e.fecha_entrega IS NOT NULL AND e.fecha_entrega <= e.fecha_programada THEN 1
                  ELSE 0
         END) * 100.0 AS FLOAT) / NULLIF(COUNT(e.id), 0) AS porcentaje_envios_cumplidos,
-
-    -- Promedio del costo de envío
     AVG(ISNULL(e.total, 0)) AS costo_envio_promedio
 
 FROM [NULL_EXEPTION].[Envio] e
